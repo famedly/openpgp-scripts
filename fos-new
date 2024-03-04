@@ -27,7 +27,7 @@ while read -p "Insert the next yubikey, remove any previous ones. 'y' to flash t
     export IDENT="oct --output-format json list | jq '.idents.[0]' -r" # Find with `oct list`
     oct admin --admin-pin /tmp/admin-pin-default --card "${IDENT}" import --key-passphrase /tmp/primary-secret /mnt/${PART_ID}/archive/employee-keys/${LOCALPART}@famedly.com/secret.asc
     oct admin --admin-pin /tmp/admin-pin-default --card "${IDENT}" name "${NAME}"
-    sq wkd url ${LOCALPART}@famedly.com | xargs oct admin --admin-pin /tmp/admin-pin-default --card "${IDENT}" url
+    sq network wkd url ${LOCALPART}@famedly.com | xargs oct admin --admin-pin /tmp/admin-pin-default --card "${IDENT}" url
     oct pin --card "${IDENT}" set-user --user-pin-old /tmp/user-pin-default --user-pin-new /tmp/user-pin-new
     oct pin --card "${IDENT}" set-admin --admin-pin-old /tmp/admin-pin-default --admin-pin-new /tmp/admin-pin-new
 done
