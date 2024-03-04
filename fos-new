@@ -20,8 +20,8 @@ echo "123456" > /tmp/user-pin-default
 echo "12345678" > /tmp/admin-pin-default
 
 # TODO: Write encrypted pins into /mnt/${PART_ID}/archive/employee-keys/${LOCALPART}@famedly.com/
-diceware -l reinhold -n 4 | trim > /tmp/user-pin-new
-diceware -l reinhold -n 6 | trim > /tmp/admin-pin-new
+diceware -l reinhold -n 4 | xargs -i printf '%s' "{}" > /tmp/user-pin-new
+diceware -l reinhold -n 6 | xargs -i printf '%s' "{}" > /tmp/admin-pin-new
 
 while read -p "Insert the next yubikey, remove any previous ones. 'y' to flash the connected yubikey, 'n' for terminating. (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]]; do
     export IDENT="oct --output-format json list | jq '.idents.[0]' -r" # Find with `oct list`

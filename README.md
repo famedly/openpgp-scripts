@@ -8,5 +8,5 @@ These are scripts we use to provision hardware keys with OpenPGP certificates fo
 - sq (https://sequoia-pgp.org/projects/#sq)
 - rusty-diceware (https://gitlab.com/yuvallanger/rusty-diceware/)
 - jq
-- trim
 - bash
+- coreutils
