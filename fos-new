@@ -1,5 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
+
+for var in "name" "email"; do
+    if ! git config user.${var} > /dev/null; then
+        echo "No ${var} set in git config! aborting..."
+        exit
+    fi
+done
+
 read -rp "Enter full name of the employee: " NAME
 read -rp "Enter email localpart of the employee: " LOCALPART
 PART_ID=$(fos-part-id)
@@ -13,7 +21,6 @@ jq -r .key < /tmp/key.json | sq key extract-cert > "/mnt/${PART_ID}/archive/empl
 
 cd "/mnt/${PART_ID}/archive"
 
-# TODO: Ensure git config is up 2 date before we do anything with git
 git add .
 git commit -m "add new employee ${NAME}"
 
