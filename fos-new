@@ -25,7 +25,7 @@ diceware -l reinhold -n 4 | xargs -I{} printf '%s' "{}" > /tmp/user-pin-new
 diceware -l reinhold -n 6 | xargs -I{} printf '%s' "{}" > /tmp/admin-pin-new
 
 while read -rp "Insert the next yubikey, remove any previous ones. 'y' to flash the connected yubikey, 'n' for terminating. (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]]; do
-    export IDENT="oct --output-format json list | jq '.idents.[0]' -r" # Find with `oct list`
+    IDENT="$(oct --output-format json list | jq '.idents.[0]' -r)"
     oct admin --admin-pin /tmp/admin-pin-default --card "${IDENT}" import --key-passphrase /tmp/primary-secret "/mnt/${PART_ID}/archive/employee-keys/${LOCALPART}@famedly.com/secret.asc"
     oct admin --admin-pin /tmp/admin-pin-default --card "${IDENT}" name "${NAME}"
     sq network wkd url "${LOCALPART}@famedly.com" | xargs oct admin --admin-pin /tmp/admin-pin-default --card "${IDENT}" url
