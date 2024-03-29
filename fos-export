@@ -2,7 +2,7 @@
 set -euo pipefail
 PART_ID=$(fos-part-id)
 oca -d /tmp/famedly.oca user export > "/mnt/${PART_ID}/exports/export_users_$(date +'%Y-%m-%d').asc"
-sq encrypt -s -o "/mnt/${PART_ID}/archive/famedly.oca-encrypted" /tmp/famedly.oca
+sq encrypt -s -f -o "/mnt/${PART_ID}/archive/famedly.oca-encrypted" /tmp/famedly.oca
 cd "/mnt/${PART_ID}/archive"
 git commit -a
 
