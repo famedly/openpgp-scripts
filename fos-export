@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
-PART_ID=$(fos-part-id)
-oca -d /tmp/famedly.oca user export > "/mnt/${PART_ID}/exports/export_users_$(date +'%Y-%m-%d').asc"
-sq encrypt -s -f -o "/mnt/${PART_ID}/archive/famedly.oca-encrypted" /tmp/famedly.oca
-cd "/mnt/${PART_ID}/archive"
+FOS_WORKING_DIR=$(fos-working-directory)
+oca -d /tmp/famedly.oca user export > "${FOS_WORKING_DIR}/exports/export_users_$(date +'%Y-%m-%d').asc"
+sq encrypt -s -f -o "${FOS_WORKING_DIR}/archive/famedly.oca-encrypted" /tmp/famedly.oca
+cd "${FOS_WORKING_DIR}/archive"
 git commit -a
 
 # TODO: Sync all sticks that are currently plugged in
