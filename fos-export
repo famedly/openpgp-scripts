@@ -6,4 +6,4 @@ sq encrypt -s -f -o "${FOS_WORKING_DIR}/archive/famedly.oca-encrypted" /tmp/fame
 cd "${FOS_WORKING_DIR}/archive"
 git commit -a
 
-# TODO: Sync all sticks that are currently plugged in
+fos-sync
