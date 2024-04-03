@@ -1,16 +1,17 @@
-#!/bin/bash
-read -p "Enter full name of the employee: " NAME
-read -p "Enter email localpart of the employee: " LOCALPART
-export PART_ID=$(fos-part-id)
+#!/usr/bin/env bash
+set -euo pipefail
+read -rp "Enter full name of the employee: " NAME
+read -rp "Enter email localpart of the employee: " LOCALPART
+PART_ID=$(fos-part-id)
 
 # TODO: get proper json interface here, this is terrible
 oca -d /tmp/famedly.oca user add --name "${NAME}" --email "${LOCALPART}@famedly.com" --validity 2y --cipher-suite cv25519 --encryption true --signing true --authentication true 2>&1 | jq -Rs 'capture("(?<key>-----BEGIN PGP PRIVATE KEY BLOCK-----.*-----END PGP PRIVATE KEY BLOCK-----).*Password for this key: .(?<password>[a-z ]*)."; "m")' > /tmp/key.json
 jq -r .password < /tmp/key.json > /tmp/old-pass
-mkdir /mnt/${PART_ID}/archive/employee-keys/${LOCALPART}@famedly.com/
-jq -r .key < /tmp/key.json | sq key password --old-password-file /tmp/old-pass --new-password-file /tmp/primary-secret > /mnt/${PART_ID}/archive/employee-keys/${LOCALPART}@famedly.com/secret.asc
-jq -r .key < /tmp/key.json | sq key extract-cert > /mnt/${PART_ID}/archive/employee-keys/${LOCALPART}@famedly.com/public.asc
+mkdir "/mnt/${PART_ID}/archive/employee-keys/${LOCALPART}@famedly.com/"
+jq -r .key < /tmp/key.json | sq key password --old-password-file /tmp/old-pass --new-password-file /tmp/primary-secret > "/mnt/${PART_ID}/archive/employee-keys/${LOCALPART}@famedly.com/secret.asc"
+jq -r .key < /tmp/key.json | sq key extract-cert > "/mnt/${PART_ID}/archive/employee-keys/${LOCALPART}@famedly.com/public.asc"
 
-cd /mnt/${PART_ID}/archive
+cd "/mnt/${PART_ID}/archive"
 
 # TODO: Ensure git config is up 2 date before we do anything with git
 git add .
@@ -20,14 +21,14 @@ echo "123456" > /tmp/user-pin-default
 echo "12345678" > /tmp/admin-pin-default
 
 # TODO: Write encrypted pins into /mnt/${PART_ID}/archive/employee-keys/${LOCALPART}@famedly.com/
-diceware -l reinhold -n 4 | xargs -i printf '%s' "{}" > /tmp/user-pin-new
-diceware -l reinhold -n 6 | xargs -i printf '%s' "{}" > /tmp/admin-pin-new
+diceware -l reinhold -n 4 | xargs -I{} printf '%s' "{}" > /tmp/user-pin-new
+diceware -l reinhold -n 6 | xargs -I{} printf '%s' "{}" > /tmp/admin-pin-new
 
-while read -p "Insert the next yubikey, remove any previous ones. 'y' to flash the connected yubikey, 'n' for terminating. (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]]; do
+while read -rp "Insert the next yubikey, remove any previous ones. 'y' to flash the connected yubikey, 'n' for terminating. (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]]; do
     export IDENT="oct --output-format json list | jq '.idents.[0]' -r" # Find with `oct list`
-    oct admin --admin-pin /tmp/admin-pin-default --card "${IDENT}" import --key-passphrase /tmp/primary-secret /mnt/${PART_ID}/archive/employee-keys/${LOCALPART}@famedly.com/secret.asc
+    oct admin --admin-pin /tmp/admin-pin-default --card "${IDENT}" import --key-passphrase /tmp/primary-secret "/mnt/${PART_ID}/archive/employee-keys/${LOCALPART}@famedly.com/secret.asc"
     oct admin --admin-pin /tmp/admin-pin-default --card "${IDENT}" name "${NAME}"
-    sq network wkd url ${LOCALPART}@famedly.com | xargs oct admin --admin-pin /tmp/admin-pin-default --card "${IDENT}" url
+    sq network wkd url "${LOCALPART}@famedly.com" | xargs oct admin --admin-pin /tmp/admin-pin-default --card "${IDENT}" url
     oct pin --card "${IDENT}" set-user --user-pin-old /tmp/user-pin-default --user-pin-new /tmp/user-pin-new
     oct pin --card "${IDENT}" set-admin --admin-pin-old /tmp/admin-pin-default --admin-pin-new /tmp/admin-pin-new
 done
