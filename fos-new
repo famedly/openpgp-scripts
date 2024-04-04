@@ -8,35 +8,35 @@ for var in "name" "email"; do
     fi
 done
 
-read -rp "Enter full name of the employee: " NAME
-read -rp "Enter email localpart of the employee: " LOCALPART
+read -rp "Enter full name of the employee: " name
+read -rp "Enter email localpart of the employee: " localpart
 
-FOS_WORKING_DIR=$(fos-working-directory)
+fos_working_dir=$(fos-working-directory)
 
 # TODO: get proper json interface here, this is terrible
-oca -d /tmp/famedly.oca user add --name "${NAME}" --email "${LOCALPART}@famedly.com" --validity 2y --cipher-suite cv25519 --encryption true --signing true --authentication true 2>&1 | jq -Rs 'capture("(?<key>-----BEGIN PGP PRIVATE KEY BLOCK-----.*-----END PGP PRIVATE KEY BLOCK-----).*Password for this key: .(?<password>[a-z ]*)."; "m")' >/tmp/key.json
+oca -d /tmp/famedly.oca user add --name "${name}" --email "${localpart}@famedly.com" --validity 2y --cipher-suite cv25519 --encryption true --signing true --authentication true 2>&1 | jq -Rs 'capture("(?<key>-----BEGIN PGP PRIVATE KEY BLOCK-----.*-----END PGP PRIVATE KEY BLOCK-----).*Password for this key: .(?<password>[a-z ]*)."; "m")' >/tmp/key.json
 jq -r .password </tmp/key.json >/tmp/old-pass
-mkdir "${FOS_WORKING_DIR}/archive/employee-keys/${LOCALPART}@famedly.com/"
-jq -r .key </tmp/key.json | sq key password --old-password-file /tmp/old-pass --new-password-file /tmp/primary-secret >"${FOS_WORKING_DIR}/archive/employee-keys/${LOCALPART}@famedly.com/secret.asc"
-jq -r .key </tmp/key.json | sq key extract-cert >"${FOS_WORKING_DIR}/archive/employee-keys/${LOCALPART}@famedly.com/public.asc"
+mkdir "${fos_working_dir}/archive/employee-keys/${localpart}@famedly.com/"
+jq -r .key </tmp/key.json | sq key password --old-password-file /tmp/old-pass --new-password-file /tmp/primary-secret >"${fos_working_dir}/archive/employee-keys/${localpart}@famedly.com/secret.asc"
+jq -r .key </tmp/key.json | sq key extract-cert >"${fos_working_dir}/archive/employee-keys/${localpart}@famedly.com/public.asc"
 
-cd "${FOS_WORKING_DIR}/archive"
+cd "${fos_working_dir}/archive"
 
 git add .
-git commit -m "add new employee ${NAME}"
+git commit -m "add new employee ${name}"
 
 echo "123456" >/tmp/user-pin-default
 echo "12345678" >/tmp/admin-pin-default
 
-# TODO: Write encrypted pins into ${FOS_WORKING_DIR}/archive/employee-keys/${LOCALPART}@famedly.com/
+# TODO: Write encrypted pins into ${fos_working_dir}/archive/employee-keys/${localpart}@famedly.com/
 diceware -l reinhold -n 4 | xargs -I{} printf '%s' "{}" >/tmp/user-pin-new
 diceware -l reinhold -n 6 | xargs -I{} printf '%s' "{}" >/tmp/admin-pin-new
 
 while read -rp "Insert the next yubikey, remove any previous ones. 'y' to flash the connected yubikey, 'n' for terminating. (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]]; do
-    IDENT="$(oct --output-format json list | jq '.idents.[0]' -r)"
-    oct admin --admin-pin /tmp/admin-pin-default --card "${IDENT}" import --key-passphrase /tmp/primary-secret "${FOS_WORKING_DIR}/archive/employee-keys/${LOCALPART}@famedly.com/secret.asc"
-    oct admin --admin-pin /tmp/admin-pin-default --card "${IDENT}" name "${NAME}"
-    sq network wkd url "${LOCALPART}@famedly.com" | xargs oct admin --admin-pin /tmp/admin-pin-default --card "${IDENT}" url
-    oct pin --card "${IDENT}" set-user --user-pin-old /tmp/user-pin-default --user-pin-new /tmp/user-pin-new
-    oct pin --card "${IDENT}" set-admin --admin-pin-old /tmp/admin-pin-default --admin-pin-new /tmp/admin-pin-new
+    card_identifier="$(oct --output-format json list | jq '.idents.[0]' -r)"
+    oct admin --admin-pin /tmp/admin-pin-default --card "${card_identifier}" import --key-passphrase /tmp/primary-secret "${fos_working_dir}/archive/employee-keys/${localpart}@famedly.com/secret.asc"
+    oct admin --admin-pin /tmp/admin-pin-default --card "${card_identifier}" name "${name}"
+    sq network wkd url "${localpart}@famedly.com" | xargs oct admin --admin-pin /tmp/admin-pin-default --card "${card_identifier}" url
+    oct pin --card "${card_identifier}" set-user --user-pin-old /tmp/user-pin-default --user-pin-new /tmp/user-pin-new
+    oct pin --card "${card_identifier}" set-admin --admin-pin-old /tmp/admin-pin-default --admin-pin-new /tmp/admin-pin-new
 done
