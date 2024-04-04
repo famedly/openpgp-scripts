@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 for partition in $(fos-partitions); do
-  cd "/mnt/${partition}/archive"
-  for other in $(fos-partitions); do
-    if [ "$partition" != "$other" ]; then
-      if ! git remote | grep -q "^${other}$"; then
-         git remote add "$other" "/mnt/${other}/archive"
-      fi
-      git fetch "${other}"
-      git merge --ff-only "${other}/main"
-    fi
-  done
+    cd "/mnt/${partition}/archive"
+    for other in $(fos-partitions); do
+        if [ "$partition" != "$other" ]; then
+            if ! git remote | grep -q "^${other}$"; then
+                git remote add "$other" "/mnt/${other}/archive"
+            fi
+            git fetch "${other}"
+            git merge --ff-only "${other}/main"
+        fi
+    done
 done

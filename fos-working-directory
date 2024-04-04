@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 for partition_id in $(fos-partitions); do
-	if [[ -h "/dev/disk/by-uuid/${partition_id}" ]]; then
-		echo "/mnt/${partition_id}"
-		exit 0
-	fi
+    if [[ -L "/dev/disk/by-uuid/${partition_id}" ]]; then
+        echo "/mnt/${partition_id}"
+        exit 0
+    fi
 done
 echo "No stick found!" >&2
 exit 1

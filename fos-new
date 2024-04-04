@@ -2,7 +2,7 @@
 set -euo pipefail
 
 for var in "name" "email"; do
-    if ! git config user.${var} > /dev/null; then
+    if ! git config user.${var} >/dev/null; then
         echo "No ${var} set in git config! aborting..."
         exit
     fi
@@ -14,23 +14,23 @@ read -rp "Enter email localpart of the employee: " LOCALPART
 FOS_WORKING_DIR=$(fos-working-directory)
 
 # TODO: get proper json interface here, this is terrible
-oca -d /tmp/famedly.oca user add --name "${NAME}" --email "${LOCALPART}@famedly.com" --validity 2y --cipher-suite cv25519 --encryption true --signing true --authentication true 2>&1 | jq -Rs 'capture("(?<key>-----BEGIN PGP PRIVATE KEY BLOCK-----.*-----END PGP PRIVATE KEY BLOCK-----).*Password for this key: .(?<password>[a-z ]*)."; "m")' > /tmp/key.json
-jq -r .password < /tmp/key.json > /tmp/old-pass
+oca -d /tmp/famedly.oca user add --name "${NAME}" --email "${LOCALPART}@famedly.com" --validity 2y --cipher-suite cv25519 --encryption true --signing true --authentication true 2>&1 | jq -Rs 'capture("(?<key>-----BEGIN PGP PRIVATE KEY BLOCK-----.*-----END PGP PRIVATE KEY BLOCK-----).*Password for this key: .(?<password>[a-z ]*)."; "m")' >/tmp/key.json
+jq -r .password </tmp/key.json >/tmp/old-pass
 mkdir "${FOS_WORKING_DIR}/archive/employee-keys/${LOCALPART}@famedly.com/"
-jq -r .key < /tmp/key.json | sq key password --old-password-file /tmp/old-pass --new-password-file /tmp/primary-secret > "${FOS_WORKING_DIR}/archive/employee-keys/${LOCALPART}@famedly.com/secret.asc"
-jq -r .key < /tmp/key.json | sq key extract-cert > "${FOS_WORKING_DIR}/archive/employee-keys/${LOCALPART}@famedly.com/public.asc"
+jq -r .key </tmp/key.json | sq key password --old-password-file /tmp/old-pass --new-password-file /tmp/primary-secret >"${FOS_WORKING_DIR}/archive/employee-keys/${LOCALPART}@famedly.com/secret.asc"
+jq -r .key </tmp/key.json | sq key extract-cert >"${FOS_WORKING_DIR}/archive/employee-keys/${LOCALPART}@famedly.com/public.asc"
 
 cd "${FOS_WORKING_DIR}/archive"
 
 git add .
 git commit -m "add new employee ${NAME}"
 
-echo "123456" > /tmp/user-pin-default
-echo "12345678" > /tmp/admin-pin-default
+echo "123456" >/tmp/user-pin-default
+echo "12345678" >/tmp/admin-pin-default
 
 # TODO: Write encrypted pins into ${FOS_WORKING_DIR}/archive/employee-keys/${LOCALPART}@famedly.com/
-diceware -l reinhold -n 4 | xargs -I{} printf '%s' "{}" > /tmp/user-pin-new
-diceware -l reinhold -n 6 | xargs -I{} printf '%s' "{}" > /tmp/admin-pin-new
+diceware -l reinhold -n 4 | xargs -I{} printf '%s' "{}" >/tmp/user-pin-new
+diceware -l reinhold -n 6 | xargs -I{} printf '%s' "{}" >/tmp/admin-pin-new
 
 while read -rp "Insert the next yubikey, remove any previous ones. 'y' to flash the connected yubikey, 'n' for terminating. (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]]; do
     IDENT="$(oct --output-format json list | jq '.idents.[0]' -r)"
