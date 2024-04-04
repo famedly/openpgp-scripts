@@ -1,6 +1,16 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+partitions_found=0
+
 for part in "B9C8-D9A6" "EC3D-3102" "F055-B17B"; do
-    ls /dev/disk/by-uuid/${part} 2>/dev/null >/dev/null && echo "${part}"
+    if [[ -L "/dev/disk/by-uuid/${part}" ]]; then
+        echo "${part}"
+        partitions_found=$((partitions_found+1))
+    fi
 done
+
+if [[ "$partitions_found" ==  "0" ]]; then
+    echo "No stick found!" >&2
+    exit 1
+fi
