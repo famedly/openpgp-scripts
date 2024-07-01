@@ -3,7 +3,7 @@ set -euo pipefail
 
 partitions_found=0
 
-for part in "B9C8-D9A6" "EC3D-3102" "F055-B17B"; do
+for part in "B9C8-D9A6" "EC3D-3102" "F055-B17B" "F665-64A4"; do
     if [[ -L "/dev/disk/by-uuid/${part}" ]]; then
         echo "${part}"
         partitions_found=$((partitions_found+1))
