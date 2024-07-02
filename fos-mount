@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 for partition_id in $(fos-partitions); do
-    mkdir "/mnt/${partition_id}"
+    mkdir -p "/mnt/${partition_id}"
     mount "/dev/disk/by-uuid/${partition_id}" "/mnt/${partition_id}" -o uid=1000,gid=1000
 done
 
