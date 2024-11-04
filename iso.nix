@@ -141,6 +141,7 @@ in
     sequoia-sq
     ssss
     tmux
+    neovim
 
     # Famedly OpenPGP Scripts
     flake.packages.${system}.fos-export
