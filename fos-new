@@ -15,10 +15,10 @@ fos_working_dir=$(fos-working-directory)
 
 # TODO: get proper json interface here, this is terrible
 oca -d /tmp/famedly.oca user add --name "${name}" --email "${localpart}@famedly.com" --validity 2y --cipher-suite cv25519 --encryption true --signing true --authentication true 2>&1 | jq -Rs 'capture("(?<key>-----BEGIN PGP PRIVATE KEY BLOCK-----.*-----END PGP PRIVATE KEY BLOCK-----).*Password for this key: .(?<password>[a-z ]*)."; "m")' >/tmp/key.json
-jq -r .password </tmp/key.json >/tmp/old-pass
+jq -jr .password </tmp/key.json >/tmp/old-pass
 mkdir "${fos_working_dir}/archive/employee-keys/${localpart}@famedly.com/"
-jq -r .key </tmp/key.json | sq key password --old-password-file /tmp/old-pass --new-password-file /tmp/primary-secret >"${fos_working_dir}/archive/employee-keys/${localpart}@famedly.com/secret.asc"
-jq -r .key </tmp/key.json | sq key extract-cert >"${fos_working_dir}/archive/employee-keys/${localpart}@famedly.com/public.asc"
+jq -jr .key </tmp/key.json | sq key password --old-password-file /tmp/old-pass --new-password-file /tmp/primary-secret >"${fos_working_dir}/archive/employee-keys/${localpart}@famedly.com/secret.asc"
+jq -jr .key </tmp/key.json | sq key extract-cert >"${fos_working_dir}/archive/employee-keys/${localpart}@famedly.com/public.asc"
 
 cd "${fos_working_dir}/archive"
 
