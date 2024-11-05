@@ -36,12 +36,12 @@
               owner = "famedly";
               repo = "openpgp-ca";
               rev = "expose-more-functionality";
-              hash = "sha256-wXOaAYjsMyPNVLddtVcAgCvof0QrHrJTqWy78ccILrI=";
+              hash = "sha256-+dAwGq3/86A1oLGdjvRHLmS+SiZrv/DqTi+fTRG8uZQ=";
             };
             cargoDeps = prevAttrs.cargoDeps.overrideAttrs (pkgs.lib.const {
               name = "${prevAttrs.pname}-vendor.tar.gz";
               inherit src;
-              outputHash = "sha256-lwgZvHvLZh4crk9wDc5jqdmW10odlFSUghpZW8+dsOk=";
+              outputHash = "sha256-hmgWa4pas3qngs6MNPzk3fPG5+jFRph0lGZvtUF4/tA=";
             });
           });
         };
