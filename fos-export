@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 cd "$(fos-working-directory)/archive"
-sq encrypt -s -f -o "famedly.oca-encrypted" /tmp/famedly.oca
+sq encrypt -s -f -o "famedly.oca-encrypted" /tmp/fos/famedly.oca
 git commit -a
 
 for partition in $(fos-partitions); do
-    oca -d /tmp/famedly.oca user export >"/mnt/${partition}/exports/export_users_$(date +'%Y-%m-%d').asc"
+    oca -d /tmp/fos/famedly.oca user export >"/mnt/${partition}/exports/export_users_$(date +'%Y-%m-%d').asc"
 done
 
 fos-sync

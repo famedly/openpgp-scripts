@@ -12,31 +12,42 @@ read -rp "Enter full name of the employee: " name
 read -rp "Enter email localpart of the employee: " localpart
 
 fos_working_dir=$(fos-working-directory)
+fos_tmp_dir="/tmp/fos"
+fos_key_file="${fos_tmp_dir}/${localpart}.asc"
+mkdir -p "${fos_tmp_dir}"
 
-# TODO: get proper json interface here, this is terrible
-oca -d /tmp/famedly.oca user add --name "${name}" --email "${localpart}@famedly.com" --validity 2y --cipher-suite cv25519 --encryption true --signing true --authentication true 2>&1 | jq -Rs 'capture("(?<key>-----BEGIN PGP PRIVATE KEY BLOCK-----.*-----END PGP PRIVATE KEY BLOCK-----).*Password for this key: .(?<password>[a-z ]*)."; "m")' >/tmp/key.json
-jq -jr .password </tmp/key.json >/tmp/old-pass
+oca -d ${fos_tmp_dir}/famedly.oca user add \
+    --name "${name}" \
+    --email "${localpart}@famedly.com" \
+    --validity 2y \
+    --cipher-suite cv25519 \
+    --encryption true \
+    --signing true \
+    --authentication true \
+    --password-file "${fos_tmp_dir}/primary-secret" \
+    > "${fos_key_file}"
+
 mkdir "${fos_working_dir}/archive/employee-keys/${localpart}@famedly.com/"
-jq -jr .key </tmp/key.json | sq key password --old-password-file /tmp/old-pass --new-password-file /tmp/primary-secret >"${fos_working_dir}/archive/employee-keys/${localpart}@famedly.com/secret.asc"
-jq -jr .key </tmp/key.json | sq key extract-cert >"${fos_working_dir}/archive/employee-keys/${localpart}@famedly.com/public.asc"
+cp "${fos_key_file}" "${fos_working_dir}/archive/employee-keys/${localpart}@famedly.com/secret.asc"
+sq toolbox extract-cert --output "${fos_working_dir}/archive/employee-keys/${localpart}@famedly.com/public.asc" "${fos_key_file}"
 
 cd "${fos_working_dir}/archive"
 
 git add .
 git commit -m "add new employee ${name}"
 
-echo "123456" >/tmp/user-pin-default
-echo "12345678" >/tmp/admin-pin-default
+echo "123456" >${fos_tmp_dir}/user-pin-default
+echo "12345678" >${fos_tmp_dir}/admin-pin-default
 
 # TODO: Write encrypted pins into ${fos_working_dir}/archive/employee-keys/${localpart}@famedly.com/
-diceware -l reinhold -n 4 | xargs -I{} printf '%s' "{}" >/tmp/user-pin-new
-diceware -l reinhold -n 6 | xargs -I{} printf '%s' "{}" >/tmp/admin-pin-new
+diceware -l reinhold -n 4 | xargs -I{} printf '%s' "{}" > "${fos_tmp_dir}/${localpart}-user-pin"
+diceware -l reinhold -n 6 | xargs -I{} printf '%s' "{}" > "${fos_tmp_dir}/${localpart}-admin-pin"
 
 while read -rp "Insert the next yubikey, remove any previous ones. 'y' to flash the connected yubikey, 'n' for terminating. (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]]; do
     card_identifier="$(oct --output-format json list | jq '.idents.[0]' -r)"
-    oct admin --admin-pin /tmp/admin-pin-default --card "${card_identifier}" import --key-passphrase /tmp/primary-secret "${fos_working_dir}/archive/employee-keys/${localpart}@famedly.com/secret.asc"
-    oct admin --admin-pin /tmp/admin-pin-default --card "${card_identifier}" name "${name}"
-    sq network wkd url "${localpart}@famedly.com" | xargs oct admin --admin-pin /tmp/admin-pin-default --card "${card_identifier}" url
-    oct pin --card "${card_identifier}" set-user --user-pin-old /tmp/user-pin-default --user-pin-new /tmp/user-pin-new
-    oct pin --card "${card_identifier}" set-admin --admin-pin-old /tmp/admin-pin-default --admin-pin-new /tmp/admin-pin-new
+    oct admin --admin-pin ${fos_tmp_dir}/admin-pin-default --card "${card_identifier}" import --key-passphrase ${fos_tmp_dir}/primary-secret "${fos_working_dir}/archive/employee-keys/${localpart}@famedly.com/secret.asc"
+    oct admin --admin-pin ${fos_tmp_dir}/admin-pin-default --card "${card_identifier}" name "${name}"
+    sq network wkd url "${localpart}@famedly.com" | xargs oct admin --admin-pin ${fos_tmp_dir}/admin-pin-default --card "${card_identifier}" url
+    oct pin --card "${card_identifier}" set-user --user-pin-old ${fos_tmp_dir}/user-pin-default --user-pin-new "${fos_tmp_dir}/${localpart}-user-pin"
+    oct pin --card "${card_identifier}" set-admin --admin-pin-old ${fos_tmp_dir}/admin-pin-default --admin-pin-new "${fos_tmp_dir}/${localpart}-admin-pin"
 done
