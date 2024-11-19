@@ -47,7 +47,6 @@ while read -rp "Insert the next yubikey, remove any previous ones. 'y' to flash 
     card_identifier="$(oct --output-format json list | jq '.idents.[0]' -r)"
     oct admin --admin-pin ${fos_tmp_dir}/admin-pin-default --card "${card_identifier}" import --key-passphrase ${fos_tmp_dir}/primary-secret "${fos_working_dir}/archive/employee-keys/${localpart}@famedly.com/secret.asc"
     oct admin --admin-pin ${fos_tmp_dir}/admin-pin-default --card "${card_identifier}" name "${name}"
-    sq network wkd url "${localpart}@famedly.com" | xargs oct admin --admin-pin ${fos_tmp_dir}/admin-pin-default --card "${card_identifier}" url
     oct pin --card "${card_identifier}" set-user --user-pin-old ${fos_tmp_dir}/user-pin-default --user-pin-new "${fos_tmp_dir}/${localpart}-user-pin"
     oct pin --card "${card_identifier}" set-admin --admin-pin-old ${fos_tmp_dir}/admin-pin-default --admin-pin-new "${fos_tmp_dir}/${localpart}-admin-pin"
 done
