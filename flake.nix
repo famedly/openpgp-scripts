@@ -25,8 +25,9 @@
         formatter = pkgs.nixpkgs-fmt;
         packages = {
           fos-export = pkgs.writeShellScriptBin "fos-export" (builtins.readFile ./fos-export);
+          fos-flash = pkgs.writeShellScriptBin "fos-flash" (builtins.readFile ./fos-flash);
+          fos-generate = pkgs.writeShellScriptBin "fos-generate" (builtins.readFile ./fos-generate);
           fos-mount = pkgs.writeShellScriptBin "fos-mount" (builtins.readFile ./fos-mount);
-          fos-new = pkgs.writeShellScriptBin "fos-new" (builtins.readFile ./fos-new);
           fos-partitions = pkgs.writeShellScriptBin "fos-partitions" (builtins.readFile ./fos-partitions);
           fos-sync = pkgs.writeShellScriptBin "fos-sync" (builtins.readFile ./fos-sync);
           fos-working-directory = pkgs.writeShellScriptBin "fos-working-directory" (builtins.readFile ./fos-working-directory);

@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+for var in "name" "email"; do
+    if ! git config user.${var} >/dev/null; then
+        echo "No ${var} set in git config! aborting..."
+        exit 1
+    fi
+done
+
+read -rp "Enter full name of the employee: " name
+read -rp "Enter email localpart of the employee: " localpart
+
+fos_working_dir=$(fos-working-directory)
+fos_tmp_dir="/tmp/fos"
+fos_key_file="${fos_tmp_dir}/${localpart}.asc"
+mkdir -p "${fos_tmp_dir}"
+
+if [ -d "${fos_working_dir}/archive/employee-keys/${localpart}@famedly.com/" ]; then
+    echo "Email localpart of the user already exists! aborting..."
+    exit 1
+fi
+
+oca -d ${fos_tmp_dir}/famedly.oca user add \
+    --name "${name}" \
+    --email "${localpart}@famedly.com" \
+    --validity 2y \
+    --cipher-suite cv25519 \
+    --encryption true \
+    --signing true \
+    --authentication true \
+    --password-file "${fos_tmp_dir}/primary-secret" \
+    > "${fos_key_file}"
+
+mkdir "${fos_working_dir}/archive/employee-keys/${localpart}@famedly.com/"
+cp "${fos_key_file}" "${fos_working_dir}/archive/employee-keys/${localpart}@famedly.com/secret.asc"
+sq toolbox extract-cert --output "${fos_working_dir}/archive/employee-keys/${localpart}@famedly.com/public.asc" "${fos_key_file}"
+
+cd "${fos_working_dir}/archive"
+
+git add .
+git commit -m "add new employee ${name}"

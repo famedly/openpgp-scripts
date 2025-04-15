@@ -4,49 +4,59 @@ set -euo pipefail
 for var in "name" "email"; do
     if ! git config user.${var} >/dev/null; then
         echo "No ${var} set in git config! aborting..."
-        exit
+        exit 1
     fi
 done
 
-read -rp "Enter full name of the employee: " name
-read -rp "Enter email localpart of the employee: " localpart
+function yes_or_no {
+    while true; do
+        read -p "$* [y/n]: " yn
+        case $yn in
+            [Yy]*) return 0  ;;  
+            [Nn]*) echo "Aborted" ; return  1 ;;
+        esac
+    done
+}
+
+if [ ! -z ${1+1} ]; then
+    localpart=$1
+else
+    read -rp "Enter email localpart of the employee: " localpart
+fi
 
 fos_working_dir=$(fos-working-directory)
 fos_tmp_dir="/tmp/fos"
-fos_key_file="${fos_tmp_dir}/${localpart}.asc"
 mkdir -p "${fos_tmp_dir}"
 
-oca -d ${fos_tmp_dir}/famedly.oca user add \
-    --name "${name}" \
-    --email "${localpart}@famedly.com" \
-    --validity 2y \
-    --cipher-suite cv25519 \
-    --encryption true \
-    --signing true \
-    --authentication true \
-    --password-file "${fos_tmp_dir}/primary-secret" \
-    > "${fos_key_file}"
+if [ ! -d "${fos_working_dir}/archive/employee-keys/${localpart}@famedly.com/" ]; then
+    echo "A user with this email localpart does not exist! aborting..."
+    exit 1
+fi
 
-mkdir "${fos_working_dir}/archive/employee-keys/${localpart}@famedly.com/"
-cp "${fos_key_file}" "${fos_working_dir}/archive/employee-keys/${localpart}@famedly.com/secret.asc"
-sq toolbox extract-cert --output "${fos_working_dir}/archive/employee-keys/${localpart}@famedly.com/public.asc" "${fos_key_file}"
-
-cd "${fos_working_dir}/archive"
-
-git add .
-git commit -m "add new employee ${name}"
+name=$(gpg --show-key --with-colons "${fos_working_dir}/archive/employee-keys/${localpart}@famedly.com/public.asc" | grep "uid" | cut -d ":" -f10 | cut -d "<" -f1 | xargs)
+echo "Preparing to flash for user '${name}' with localpart '${localpart}'"
 
 echo "123456" >${fos_tmp_dir}/user-pin-default
 echo "12345678" >${fos_tmp_dir}/admin-pin-default
 
-# TODO: Write encrypted pins into ${fos_working_dir}/archive/employee-keys/${localpart}@famedly.com/
 diceware -l reinhold -n 4 | xargs -0 -I{} printf '%s' "{}" > "${fos_tmp_dir}/${localpart}-user-pin"
 diceware -l reinhold -n 6 | xargs -0 -I{} printf '%s' "{}" > "${fos_tmp_dir}/${localpart}-admin-pin"
 
+sq encrypt --force --with-password-file "${fos_tmp_dir}/primary-secret" --output "${fos_working_dir}/archive/employee-keys/${localpart}@famedly.com/user-pin.asc" "${fos_tmp_dir}/${localpart}-user-pin"
+sq encrypt --force --with-password-file "${fos_tmp_dir}/primary-secret" --output "${fos_working_dir}/archive/employee-keys/${localpart}@famedly.com/admin-pin.asc" "${fos_tmp_dir}/${localpart}-admin-pin"
+
 while read -rp "Insert the next yubikey, remove any previous ones. 'y' to flash the connected yubikey, 'n' for terminating. (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]]; do
+    yes_or_no "Reset the inserted Yubikey before flashing?" && ykman openpgp reset -f
     card_identifier="$(oct --output-format json list | jq '.idents.[0]' -r)"
     oct admin --admin-pin ${fos_tmp_dir}/admin-pin-default --card "${card_identifier}" import --key-passphrase ${fos_tmp_dir}/primary-secret "${fos_working_dir}/archive/employee-keys/${localpart}@famedly.com/secret.asc"
     oct admin --admin-pin ${fos_tmp_dir}/admin-pin-default --card "${card_identifier}" name "${name}"
     oct pin --card "${card_identifier}" set-user --user-pin-old ${fos_tmp_dir}/user-pin-default --user-pin-new "${fos_tmp_dir}/${localpart}-user-pin"
     oct pin --card "${card_identifier}" set-admin --admin-pin-old ${fos_tmp_dir}/admin-pin-default --admin-pin-new "${fos_tmp_dir}/${localpart}-admin-pin"
+    echo "Finishing write process (takes ~15 sec - do not unplug the Yubikey yet)..."
+    sleep 15
 done
+
+cd "${fos_working_dir}/archive"
+
+git add .
+git commit -m "add new employee PIN/PUK for ${name}"

@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+mkdir -p /tmp/fos
+cat shares.txt | sed 's/ //g' | ssss-combine -Qt 2 > /tmp/fos/primary-secret
