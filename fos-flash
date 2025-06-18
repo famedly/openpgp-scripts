@@ -42,8 +42,8 @@ echo "12345678" >${fos_tmp_dir}/admin-pin-default
 diceware -l reinhold -n 4 | xargs -0 -I{} printf '%s' "{}" > "${fos_tmp_dir}/${localpart}-user-pin"
 diceware -l reinhold -n 6 | xargs -0 -I{} printf '%s' "{}" > "${fos_tmp_dir}/${localpart}-admin-pin"
 
-sq encrypt --force --with-password-file "${fos_tmp_dir}/primary-secret" --output "${fos_working_dir}/archive/employee-keys/${localpart}@famedly.com/user-pin.asc" "${fos_tmp_dir}/${localpart}-user-pin"
-sq encrypt --force --with-password-file "${fos_tmp_dir}/primary-secret" --output "${fos_working_dir}/archive/employee-keys/${localpart}@famedly.com/admin-pin.asc" "${fos_tmp_dir}/${localpart}-admin-pin"
+sq encrypt --without-signature --with-password-file "${fos_tmp_dir}/primary-secret" --output "${fos_working_dir}/archive/employee-keys/${localpart}@famedly.com/user-pin.asc" "${fos_tmp_dir}/${localpart}-user-pin"
+sq encrypt --without-signature --with-password-file "${fos_tmp_dir}/primary-secret" --output "${fos_working_dir}/archive/employee-keys/${localpart}@famedly.com/admin-pin.asc" "${fos_tmp_dir}/${localpart}-admin-pin"
 
 while read -rp "Insert the next yubikey, remove any previous ones. 'y' to flash the connected yubikey, 'n' for terminating. (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]]; do
     yes_or_no "Reset the inserted Yubikey before flashing?" && ykman openpgp reset -f

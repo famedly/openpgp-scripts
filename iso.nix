@@ -21,7 +21,7 @@ let
   '';
   shortcut = pkgs.makeDesktopItem {
     name = "yubikey-guide";
-    icon = "${pkgs.yubikey-manager-qt}/share/icons/hicolor/128x128/apps/ykman.png";
+    icon = "${pkgs.yubioath-flutter}/share/pixmaps/com.yubico.yubioath.png";
     desktopName = "drduh's YubiKey Guide";
     genericName = "Guide to using YubiKey for GnuPG and SSH";
     comment = "Open the guide in a reader program";
@@ -100,6 +100,8 @@ in
     root.initialHashedPassword = "";
   };
 
+  time.timeZone = "Europe/Berlin";
+
   security = {
     sudo = {
       enable = true;
@@ -116,9 +118,7 @@ in
 
     # Yubico's official tools
     yubikey-manager
-    yubikey-manager-qt
     yubikey-personalization
-    yubikey-personalization-gui
     yubico-piv-tool
     yubioath-flutter
 
@@ -127,14 +127,14 @@ in
     yubikeyGuide
 
     cfssl
-    falkon
+    flake.packages.${system}.openpgp-ca # openpgp-ca with famedly patches
     git
     htop
     jq
+    kdePackages.falkon
+    kdePackages.okular
     nano
     neovim
-    okular
-    flake.packages.${system}.openpgp-ca # openpgp-ca with famedly patches
     openpgp-card-tools
     pcsctools
     pwgen

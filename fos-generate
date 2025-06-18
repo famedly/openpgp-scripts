@@ -34,7 +34,10 @@ oca -d ${fos_tmp_dir}/famedly.oca user add \
 
 mkdir "${fos_working_dir}/archive/employee-keys/${localpart}@famedly.com/"
 cp "${fos_key_file}" "${fos_working_dir}/archive/employee-keys/${localpart}@famedly.com/secret.asc"
-sq toolbox extract-cert --output "${fos_working_dir}/archive/employee-keys/${localpart}@famedly.com/public.asc" "${fos_key_file}"
+
+sq key import "$fos_key_file"
+key_fingerprint=$(sq inspect /tmp/fos/s.kim.asc | grep "Fingerprint" | xargs | cut -d " " -f2)
+sq cert export --output "${fos_working_dir}/archive/employee-keys/${localpart}@famedly.com/public.asc" --cert-email "${localpart}@famedly.com" --trust-root "$key_fingerprint"
 
 cd "${fos_working_dir}/archive"
 
