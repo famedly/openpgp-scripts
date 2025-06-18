@@ -32,6 +32,7 @@ let
     name = "yubikey-guide";
     paths = [ viewYubikeyGuide shortcut ];
   };
+  session = "dbus-run-session -- startplasma-wayland";
 in
 {
   isoImage = {
@@ -54,19 +55,19 @@ in
     # Automatically log in at the virtual consoles.
     getty.autologinUser = "nixos";
     # Comment out to run in a console for a smaller iso and less RAM.
-    xserver = {
+    desktopManager.plasma6.enable = true;
+    greetd = {
       enable = true;
-      desktopManager.xfce = {
-        enable = true;
-        enableScreensaver = false;
+      settings = {
+        initial_session = {
+          command = "${session}";
+          user = "nixos";
+        };
+        default_session = {
+          command = "${pkgs.greetd.greetd}/bin/agreety --cmd ${session}";
+          user = "greeter";
+        };
       };
-      displayManager = {
-        lightdm.enable = true;
-      };
-    };
-    displayManager.autoLogin = {
-      enable = true;
-      user = "nixos";
     };
   };
 
@@ -100,9 +101,6 @@ in
   };
 
   security = {
-    pam.services.lightdm.text = ''
-      auth sufficient pam_succeed_if.so user ingroup wheel
-    '';
     sudo = {
       enable = true;
       wheelNeedsPassword = false;
@@ -129,9 +127,12 @@ in
     yubikeyGuide
 
     cfssl
+    falkon
     git
     htop
     jq
+    nano
+    neovim
     okular
     flake.packages.${system}.openpgp-ca # openpgp-ca with famedly patches
     openpgp-card-tools
@@ -141,7 +142,8 @@ in
     sequoia-sq
     ssss
     tmux
-    neovim
+    wayland-utils
+    wl-clipboard
 
     # Famedly OpenPGP Scripts
     flake.packages.${system}.fos-export
@@ -151,6 +153,14 @@ in
     flake.packages.${system}.fos-partitions
     flake.packages.${system}.fos-sync
     flake.packages.${system}.fos-working-directory
+  ];
+
+  environment.plasma6.excludePackages = with pkgs.kdePackages; [
+    elisa
+    kdepim-runtime
+    krdp
+    oxygen
+    plasma-browser-integration
   ];
 
   nixpkgs.config.allowBroken = true;
@@ -203,7 +213,11 @@ in
     virtualisation = {
       memorySize = 4096;
       cores = 4;
-      graphics = true;
+      qemu.options = [
+        "-vga none"
+        "-device virtio-gpu"
+        "-usbdevice tablet"
+      ];
     };
   };
 
