@@ -32,7 +32,6 @@ let
     name = "yubikey-guide";
     paths = [ viewYubikeyGuide shortcut ];
   };
-  session = "dbus-run-session -- startplasma-wayland";
 in
 {
   isoImage = {
@@ -60,11 +59,11 @@ in
       enable = true;
       settings = {
         initial_session = {
-          command = "${session}";
+          command = "startplasma-wayland";
           user = "nixos";
         };
         default_session = {
-          command = "${pkgs.greetd.greetd}/bin/agreety --cmd ${session}";
+          command = "${pkgs.greetd.greetd}/bin/agreety --cmd startplasma-wayland";
           user = "greeter";
         };
       };
@@ -162,8 +161,6 @@ in
     oxygen
     plasma-browser-integration
   ];
-
-  nixpkgs.config.allowBroken = true;
 
   # Disable networking so the system is air-gapped
   # Comment all of these lines out if you'll need internet access

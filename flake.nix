@@ -4,13 +4,22 @@
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs?ref=nixpkgs-unstable";
     flake-parts.url = "github:hercules-ci/flake-parts";
+    home-manager = {
+      url = "github:nix-community/home-manager";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    plasma-manager = {
+      url = "github:nix-community/plasma-manager";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.home-manager.follows = "home-manager";
+    };
     yubikeyGuide = {
       url = "github:drduh/YubiKey-Guide";
       flake = false;
     };
   };
 
-  outputs = inputs@{ self, nixpkgs, flake-parts, ... }:
+  outputs = inputs@{ self, nixpkgs, flake-parts, home-manager, plasma-manager, ... }:
 
     flake-parts.lib.mkFlake { inherit inputs; } {
 
@@ -57,6 +66,13 @@
                 "${nixpkgs}/nixos/modules/profiles/all-hardware.nix"
                 "${nixpkgs}/nixos/modules/installer/cd-dvd/iso-image.nix"
                 ./iso.nix
+                home-manager.nixosModules.home-manager
+                {
+                  home-manager.useGlobalPkgs = true;
+                  home-manager.useUserPackages = true;
+                  home-manager.sharedModules = [ plasma-manager.homeManagerModules.plasma-manager ];
+                  home-manager.users.nixos = import ./home.nix;
+                }
               ];
               specialArgs = {
                 inherit inputs;
