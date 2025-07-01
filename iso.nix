@@ -150,6 +150,7 @@ in
     flake.packages.${system}.fos-generate
     flake.packages.${system}.fos-mount
     flake.packages.${system}.fos-partitions
+    flake.packages.${system}.fos-renew
     flake.packages.${system}.fos-sync
     flake.packages.${system}.fos-working-directory
   ];

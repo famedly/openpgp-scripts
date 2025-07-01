@@ -1,0 +1,75 @@
+#!/run/current-system/sw/bin/bash
+
+function confirm {
+    while true; do
+        read -p "$* ([y]/n): " answer
+        case $answer in
+            "") return 0 ;;
+            [Yy]) return 0 ;;
+            [Nn]) return 1 ;;
+        esac
+    done
+}
+
+if [ -z "$1" ]; then
+  days=60
+else
+  days=$1
+fi
+
+echo "looking for public keys in /tmp/fos/famedly.oca that will expire in the next $days days"
+
+expired_certs=$(oca -d /tmp/fos/famedly.oca user check expiry -d $days | grep -oP 'fingerprint\s+\K\w+')
+
+if [ -z "$expired_certs" ]; then
+    echo "no public keys to renew"
+    exit 0
+fi
+
+# ensure primary secret without whitespace exists
+if [ ! -f /tmp/fos/primary-secret-trimmed ]; then
+    cat /tmp/fos/primary-secret | tr -d "[:space:]" > /tmp/fos/primary-secret-trimmed
+fi
+
+# export current keylist
+oca -d /tmp/fos/famedly.oca keylist export -fp /tmp/fos/ --sig-uri https://tmp.only
+# remove unneeded sig
+rm -f /tmp/fos/tmp.only
+
+for id in $expired_certs; do
+    email=$(cat /tmp/fos/keylist.json | jq -r ".keys[] | select(.fingerprint == \"${id}\") | .email")
+    name=$(cat /tmp/fos/keylist.json | jq -r ".keys[] | select(.fingerprint == \"${id}\") | .name")
+    if confirm "extend public key expiration date for $name ($email)?"; then
+        archive_path="$(fos-working-directory)/archive/employee-keys/${email}"
+
+        # import private and public key
+        sq -q key import "$archive_path/secret.asc" || exit 1
+        sq -q cert import "$archive_path/public.asc" || exit 1
+
+        # extend expiration date for public key
+        sq -q --password-file "/tmp/fos/primary-secret-trimmed" key expire --cert "$id" --expiration 2y || exit 1
+
+        # extend expiration date for all subkeys of public key
+        subkeys=$(cat $archive_path/public.asc | gpg -q --with-colons --import-options show-only --import | grep "fpr" | tail -n +2 | cut -d ":" -f10)
+        for skid in $subkeys; do
+            echo "sq -q key subkey expire --cert "$id" --key "$skid" --expiration 2y"
+            sq -q --password-file "/tmp/fos/primary-secret-trimmed" key subkey expire --cert "$id" --key "$skid" --expiration 2y || exit 1
+        done
+
+        # write the new cert and inspect it for review
+        sq cert export --cert "$id" --output "$archive_path/public.asc" --overwrite || exit 1
+        sq inspect --cert-file "$archive_path/public.asc"
+
+        if confirm "update OCA with $archive_path/public.asc and commit file?"; then
+            oca -d /tmp/fos/famedly.oca user update -f "$archive_path/public.asc" || exit 1
+            cd "$(fos-working-directory)/archive"
+            git add "$archive_path" || exit 1
+            git commit -m "extend public key expiration date for $name ($email)" || exit 1
+        else
+            echo "$archive_path/public.asc not added to OCA and git repository."
+        fi
+    else
+        echo "skipped $name ($email)"
+        continue
+    fi
+done
