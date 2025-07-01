@@ -1,4 +1,4 @@
-#!/run/current-system/sw/bin/bash
+#!/usr/bin/env bash
 
 function confirm {
     while true; do
@@ -64,7 +64,7 @@ for id in $expired_certs; do
             oca -d /tmp/fos/famedly.oca user update -f "$archive_path/public.asc" || exit 1
             cd "$(fos-working-directory)/archive"
             git add "$archive_path" || exit 1
-            git commit -m "extend public key expiration date for $name ($email)" || exit 1
+            git commit -m "extend public key expiration date for $name <$email>" || exit 1
         else
             echo "$archive_path/public.asc not added to OCA and git repository."
         fi
