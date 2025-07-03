@@ -36,6 +36,9 @@ oca -d /tmp/fos/famedly.oca keylist export -fp /tmp/fos/ --sig-uri https://tmp.o
 # remove unneeded sig
 rm -f /tmp/fos/tmp.only
 
+# export CA private key
+oca -d /tmp/fos/famedly.oca ca private > /tmp/fos/ca-secret.asc
+
 for id in $expired_certs; do
     email=$(cat /tmp/fos/keylist.json | jq -r ".keys[] | select(.fingerprint == \"${id}\") | .email")
     name=$(cat /tmp/fos/keylist.json | jq -r ".keys[] | select(.fingerprint == \"${id}\") | .name")
@@ -56,9 +59,12 @@ for id in $expired_certs; do
             sq -q --password-file "/tmp/fos/primary-secret-trimmed" key subkey expire --cert "$id" --key "$skid" --expiration 2y || exit 1
         done
 
+        # renew certification using the CA private key
+        sq pki vouch add --expiration 2y --certifier-file /tmp/fos/ca-secret.asc --cert "$id" --userid-by-email "$email" --overwrite --output "$archive_path/public.asc"
+
         # write the new cert and inspect it for review
         sq cert export --cert "$id" --output "$archive_path/public.asc" --overwrite || exit 1
-        sq inspect --cert-file "$archive_path/public.asc"
+        sq inspect --certifications --cert-file "$archive_path/public.asc"
 
         if confirm "update OCA with $archive_path/public.asc and commit file?"; then
             oca -d /tmp/fos/famedly.oca user update -f "$archive_path/public.asc" || exit 1
