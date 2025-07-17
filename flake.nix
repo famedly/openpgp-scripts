@@ -39,7 +39,7 @@
           fos-mount = pkgs.writeShellScriptBin "fos-mount" (builtins.readFile ./fos-mount);
           fos-partitions = pkgs.writeShellScriptBin "fos-partitions" (builtins.readFile ./fos-partitions);
           fos-renew = pkgs.writeShellScriptBin "fos-renew" (builtins.readFile ./fos-renew);
-          fos-rotate-passwords = pkgs.writeShellScriptBin "fos-renew" (builtins.readFile ./fos-rotate-passwords);
+          fos-rotate-passwords = pkgs.writeShellScriptBin "fos-rotate-passwords" (builtins.readFile ./fos-rotate-passwords);
           fos-sync = pkgs.writeShellScriptBin "fos-sync" (builtins.readFile ./fos-sync);
           fos-working-directory = pkgs.writeShellScriptBin "fos-working-directory" (builtins.readFile ./fos-working-directory);
           openpgp-ca = pkgs.openpgp-ca.overrideAttrs (prevAttrs: rec {
