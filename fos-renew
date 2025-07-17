@@ -26,11 +26,6 @@ if [ -z "$expired_certs" ]; then
     exit 0
 fi
 
-# ensure primary secret without whitespace exists
-if [ ! -f /tmp/fos/primary-secret-trimmed ]; then
-    cat /tmp/fos/primary-secret | tr -d "[:space:]" > /tmp/fos/primary-secret-trimmed
-fi
-
 # export current keylist
 oca -d /tmp/fos/famedly.oca keylist export -fp /tmp/fos/ --sig-uri https://tmp.only
 # remove unneeded sig
@@ -50,13 +45,13 @@ for id in $expired_certs; do
         sq -q cert import "$archive_path/public.asc" || exit 1
 
         # extend expiration date for public key
-        sq -q --password-file "/tmp/fos/primary-secret-trimmed" key expire --cert "$id" --expiration 2y || exit 1
+        sq -q --password-file "/tmp/fos/primary-secret" key expire --cert "$id" --expiration 2y || exit 1
 
         # extend expiration date for all subkeys of public key
         subkeys=$(cat $archive_path/public.asc | gpg -q --with-colons --import-options show-only --import | grep "fpr" | tail -n +2 | cut -d ":" -f10)
         for skid in $subkeys; do
             echo "sq -q key subkey expire --cert "$id" --key "$skid" --expiration 2y"
-            sq -q --password-file "/tmp/fos/primary-secret-trimmed" key subkey expire --cert "$id" --key "$skid" --expiration 2y || exit 1
+            sq -q --password-file "/tmp/fos/primary-secret" key subkey expire --cert "$id" --key "$skid" --expiration 2y || exit 1
         done
 
         # renew certification using the CA private key
