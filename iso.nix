@@ -10,7 +10,12 @@
 # The above copyright notice and this permission notice shall be included in all
 # copies or substantial portions of the Software.
 
-{ lib, pkgs, flake, ... }:
+{
+  lib,
+  pkgs,
+  flake,
+  ...
+}:
 let
   viewYubikeyGuide = pkgs.writeShellScriptBin "view-yubikey-guide" ''
     viewer="$(type -P xdg-open || true)"
@@ -30,13 +35,15 @@ let
   };
   yubikeyGuide = pkgs.symlinkJoin {
     name = "yubikey-guide";
-    paths = [ viewYubikeyGuide shortcut ];
+    paths = [
+      viewYubikeyGuide
+      shortcut
+    ];
   };
 in
 {
+  image.fileName = "fos.iso";
   isoImage = {
-    isoName = "fos.iso";
-
     makeEfiBootable = true;
     makeUsbBootable = true;
   };
@@ -45,7 +52,9 @@ in
 
   boot = {
     tmp.cleanOnBoot = true;
-    kernel.sysctl = { "kernel.unprivileged_bpf_disabled" = 1; };
+    kernel.sysctl = {
+      "kernel.unprivileged_bpf_disabled" = 1;
+    };
   };
 
   services = {
@@ -63,7 +72,7 @@ in
           user = "nixos";
         };
         default_session = {
-          command = "${pkgs.greetd.greetd}/bin/agreety --cmd startplasma-wayland";
+          command = "${pkgs.greetd}/bin/agreety --cmd startplasma-wayland";
           user = "greeter";
         };
       };
@@ -93,7 +102,10 @@ in
   users.users = {
     nixos = {
       isNormalUser = true;
-      extraGroups = [ "wheel" "video" ];
+      extraGroups = [
+        "wheel"
+        "video"
+      ];
       initialHashedPassword = "";
     };
     root.initialHashedPassword = "";
@@ -126,7 +138,7 @@ in
     yubikeyGuide
 
     cfssl
-    flake.packages.${system}.openpgp-ca # openpgp-ca with famedly patches
+    flake.packages.${stdenv.hostPlatform.system}.openpgp-ca # openpgp-ca with famedly patches
     git
     htop
     jq
@@ -135,7 +147,7 @@ in
     nano
     neovim
     openpgp-card-tools
-    pcsctools
+    pcsc-tools
     pwgen
     rusty-diceware
     sequoia-sq
@@ -145,15 +157,15 @@ in
     wl-clipboard
 
     # Famedly OpenPGP Scripts
-    flake.packages.${system}.fos-export
-    flake.packages.${system}.fos-flash
-    flake.packages.${system}.fos-generate
-    flake.packages.${system}.fos-mount
-    flake.packages.${system}.fos-partitions
-    flake.packages.${system}.fos-renew
-    flake.packages.${system}.fos-rotate-passwords
-    flake.packages.${system}.fos-sync
-    flake.packages.${system}.fos-working-directory
+    flake.packages.${stdenv.hostPlatform.system}.fos-export
+    flake.packages.${stdenv.hostPlatform.system}.fos-flash
+    flake.packages.${stdenv.hostPlatform.system}.fos-generate
+    flake.packages.${stdenv.hostPlatform.system}.fos-mount
+    flake.packages.${stdenv.hostPlatform.system}.fos-partitions
+    flake.packages.${stdenv.hostPlatform.system}.fos-renew
+    flake.packages.${stdenv.hostPlatform.system}.fos-rotate-passwords
+    flake.packages.${stdenv.hostPlatform.system}.fos-sync
+    flake.packages.${stdenv.hostPlatform.system}.fos-working-directory
   ];
 
   environment.plasma6.excludePackages = with pkgs.kdePackages; [

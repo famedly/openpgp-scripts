@@ -1,5 +1,3 @@
-{ config, pkgs, ... }:
-
 {
   # https://nix-community.github.io/home-manager/options.xhtml
   home.username = "nixos";
@@ -69,7 +67,7 @@
     ];
     kscreenlocker = {
       lockOnResume = false;
-      passwordRequired  = false;
+      passwordRequired = false;
     };
     powerdevil = {
       AC.autoSuspend.action = "nothing";
