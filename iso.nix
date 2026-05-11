@@ -137,6 +137,9 @@ in
     # to open it in a non-graphical environment).
     yubikeyGuide
 
+    # certstrap for managing the mTLS root CA
+    certstrap
+
     cfssl
     flake.packages.${stdenv.hostPlatform.system}.openpgp-ca # openpgp-ca with famedly patches
     git
