@@ -1,0 +1,138 @@
+#!/usr/bin/env bash
+#
+# Operations:
+#   init-root                    create the root CA
+#   sign-intermediate <csr-file> sign an intermediate CSR
+#   verify <cert-file>           verify a certificate against the root
+#   list                         show what's in the depot
+#
+# Passphrase handling:
+#   - Interactive by default (certstrap prompts).
+#   - ROOT_CA_PASSPHRASE=<passphrase>
+
+set -euo pipefail
+
+readonly DEPOT="$(fca-working-directory)/ca-data"
+readonly ORG="Famedly GmbH"
+readonly CURVE="P-384"
+readonly ROOT_CN="Famedly GmbH Root CA 2026"
+readonly ROOT_EXPIRES="10 years"
+readonly INT_EXPIRES="5 years"
+
+usage() {
+  sed -n '3,/^set -euo pipefail$/p' "$0" | sed -n 's/^# \{0,1\}//p' >&2
+  exit "${1:-2}"
+}
+
+slug_for_cn() { printf '%s' "${1// /_}"; }
+root_slug() { slug_for_cn "$ROOT_CN"; }
+
+build_pass_args() {
+  if [[ -n "${ROOT_CA_PASSPHRASE:-}" ]]; then
+    printf '%s\n%s\n' "--passphrase" "$ROOT_CA_PASSPHRASE"
+  fi
+}
+
+assert_no_clobber() {
+  [[ -e "$1" ]] && die "refusing to overwrite existing file: $1"
+  return 0
+}
+
+die() {
+  echo "$*"
+  exit 1
+}
+
+cmd_init_root() {
+  mkdir -p "$DEPOT"
+  local slug="$(root_slug)"
+  assert_no_clobber "$DEPOT/$slug.key"
+  assert_no_clobber "$DEPOT/$slug.crt"
+
+  local pass_args=()
+  while IFS= read -r line; do pass_args+=("$line"); done < <(build_pass_args)
+
+  certstrap --depot-path "$DEPOT" init \
+    --common-name "$ROOT_CN" \
+    --organization "$ORG" \
+    --curve "$CURVE" \
+    --expires "$ROOT_EXPIRES" \
+    --path-length 1 \
+    "${pass_args[@]}"
+}
+
+cmd_sign_intermediate() {
+  local csr_file="$1"
+  [[ -f "$csr_file" ]] || die "CSR file not found: $csr_file"
+
+  local root_slug="$(root_slug)"
+  [[ -f "$DEPOT/$root_slug.key" ]] || die "root key not found at $DEPOT/$root_slug.key"
+
+  local cn="$(openssl req -in $csr_file -noout -subject | sed 's/subject=CN=//')"
+  [[ -z "$cn" ]] && die "Couldn't decode CN from $csr_file"
+
+  local int_slug="$(slug_for_cn "$cn")"
+  assert_no_clobber "$DEPOT/$int_slug.crt"
+
+  local pass_args=()
+  while IFS= read -r line; do pass_args+=("$line"); done < <(build_pass_args)
+
+  certstrap --depot-path "$DEPOT" sign \
+    --CA "$ROOT_CN" \
+    --intermediate \
+    --path-length 0 \
+    --expires "$INT_EXPIRES" \
+    --csr "$csr_file" \
+    "${pass_args[@]}" \
+    "$cn"
+}
+
+cmd_verify() {
+  local cert="$1"
+  [[ -f "$cert" ]] || die "cert not found: $cert"
+  local root_slug root_crt
+  root_slug="$(root_slug)"
+  root_crt="$DEPOT/$root_slug.crt"
+  [[ -f "$root_crt" ]] || die "root cert not found at $root_crt"
+
+  openssl verify -CAfile "$root_crt" "$cert"
+  openssl x509 -in "$cert" -noout -subject -issuer -dates -ext basicConstraints,keyUsage,subjectKeyIdentifier,authorityKeyIdentifier
+}
+
+cmd_list() {
+  [[ -d "$DEPOT" ]] || die "depot $DEPOT does not exist"
+  echo "depot: $DEPOT"
+  echo
+  ls -lh "$DEPOT"/*
+  local root_crt; root_crt="$DEPOT/$(root_slug).crt"
+  if [[ -f "$root_crt" ]]; then
+    echo
+    openssl x509 -in "$root_crt" -noout -subject -dates -ext basicConstraints,keyUsage
+  fi
+  local root_crl; root_crl="$DEPOT/$(root_slug).crl"
+  if [[ -f "$root_crl" ]]; then
+    echo
+    openssl crl -in "$root_crl" -noout -text
+  fi
+}
+
+[[ $# -ge 1 ]] || usage
+
+sub="$1"; shift
+case "$sub" in
+  -h|--help|help)
+    usage 0
+    ;;
+  init-root|sign-intermediate|verify|list)
+    ;;
+  *)
+    die "unknown subcommand: $sub (try $0 --help)"
+    ;;
+esac
+
+case "$sub" in
+  init-root)         [[ $# -eq 0 ]] || die "init-root takes no args";          cmd_init_root ;;
+  sign-intermediate) [[ $# -eq 1 ]] || die "usage: $0 sign-intermediate CSR";  cmd_sign_intermediate "$1" ;;
+  verify)            [[ $# -eq 1 ]] || die "usage: $0 verify CERT";            cmd_verify "$1" ;;
+  list)              [[ $# -eq 0 ]] || die "list takes no args";               cmd_list ;;
+esac

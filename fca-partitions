@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
+
 set -euo pipefail
 
 partitions_found=0
 
-for part in "B9C8-D9A6" "EC3D-3102" "F055-B17B" "F665-64A4"; do
+for part in "1fa86f97-8161-433a-9f03-7ff80877932c" "caa1991c-af27-47c1-8148-5eb528c73376" "3fc9965e-fd79-4a4d-8a80-4d3b57acfc27"; do
     if [[ -L "/dev/disk/by-uuid/${part}" ]]; then
         echo "${part}"
         partitions_found=$((partitions_found+1))
@@ -11,6 +12,6 @@ for part in "B9C8-D9A6" "EC3D-3102" "F055-B17B" "F665-64A4"; do
 done
 
 if [[ "$partitions_found" ==  "0" ]]; then
-    echo "No OCA stick found!" >&2
+    echo "No CA stick found!" >&2
     exit 1
 fi

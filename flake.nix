@@ -43,6 +43,15 @@
         {
           formatter = pkgs.nixpkgs-fmt;
           packages = {
+            # Famedly CA Scripts
+            fca-mount = pkgs.writeShellScriptBin "fca-mount" (builtins.readFile ./fca-mount);
+            fca-partitions = pkgs.writeShellScriptBin "fca-partitions" (builtins.readFile ./fca-partitions);
+            fca-sync = pkgs.writeShellScriptBin "fca-sync" (builtins.readFile ./fca-sync);
+            fca-tools = pkgs.writeShellScriptBin "fca-tools" (builtins.readFile ./fca-tools);
+            fca-working-directory = pkgs.writeShellScriptBin "fca-working-directory" (
+              builtins.readFile ./fca-working-directory
+            );
+            # Famedly OpenPGP Scripts
             fos-export = pkgs.writeShellScriptBin "fos-export" (builtins.readFile ./fos-export);
             fos-flash = pkgs.writeShellScriptBin "fos-flash" (builtins.readFile ./fos-flash);
             fos-generate = pkgs.writeShellScriptBin "fos-generate" (builtins.readFile ./fos-generate);

@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+for partition in $(fca-partitions); do
+    cd "/mnt/${partition}/ca-data"
+    for other in $(fca-partitions); do
+        if [ "$partition" != "$other" ]; then
+            if ! git remote | grep -q "^${other}$"; then
+                git remote add "$other" "/mnt/${other}/ca-data"
+            fi
+            git fetch "${other}"
+            git merge --ff-only "${other}/main"
+        fi
+    done
+done
+
+sync

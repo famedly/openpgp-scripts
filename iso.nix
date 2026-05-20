@@ -147,9 +147,11 @@ in
     jq
     kdePackages.falkon
     kdePackages.okular
+    kdePackages.partitionmanager
     nano
     neovim
     openpgp-card-tools
+    openssl
     pcsc-tools
     pwgen
     rusty-diceware
@@ -158,6 +160,13 @@ in
     tmux
     wayland-utils
     wl-clipboard
+
+    # Famedly CA Scripts
+    flake.packages.${stdenv.hostPlatform.system}.fca-mount
+    flake.packages.${stdenv.hostPlatform.system}.fca-partitions
+    flake.packages.${stdenv.hostPlatform.system}.fca-sync
+    flake.packages.${stdenv.hostPlatform.system}.fca-tools
+    flake.packages.${stdenv.hostPlatform.system}.fca-working-directory
 
     # Famedly OpenPGP Scripts
     flake.packages.${stdenv.hostPlatform.system}.fos-export

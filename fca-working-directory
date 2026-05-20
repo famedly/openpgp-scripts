@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+partition="$(fca-partitions | head -n 1)"
+echo "/mnt/${partition}"
